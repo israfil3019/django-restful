@@ -1,10 +1,14 @@
 from django.shortcuts import render, HttpResponse
 from .models import Student
-from .models import Student
 from django.http import JsonResponse
 from django.core.serializers import serialize
 import json
 from django.views.decorators.csrf import csrf_exempt
+
+from rest_framework.decorators import api_view
+from .serializers import StudentSerializer
+from rest_framework import status
+from rest_framework.response import Response
 
 
 
@@ -65,3 +69,21 @@ def student_add_api(request):
             'message': f"Student {student.last_name} added successfully"
         }
         return JsonResponse(data, status=201)
+
+
+@api_view(['GET', 'POST'])
+def student_api(request):
+    if request.method == 'GET':
+        students = Student.objects.all()
+        serializer = StudentSerializer(students, many=True)
+      
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        serializer = StudentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            data = {
+                'message': f"Student {serializer.validated_data.get('first_name')} added successfully"
+            }
+            return Response(data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
